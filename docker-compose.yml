@@ -1,57 +1,3 @@
-# version: '3.9'
-
-# services:
-#   app:
-#     build: .
-#     ports:
-#       - "8080:8080"
-#     depends_on:
-#       - db
-#     environment:
-#       - DATABASE_URL=postgres://postgres:qweqwe33@db:5432/file_uploader?sslmode=disable
-#     networks:
-#       - backend
-
-#   db:
-#     image: postgres:16
-#     restart: always
-#     ports:
-#       - "5432:5432"
-#     environment:
-#       POSTGRES_USER: postgres
-#       POSTGRES_PASSWORD: qweqwe33
-#       POSTGRES_DB: file_uploader
-#     volumes:
-#       - pgdata:/var/lib/postgresql/data
-#     healthcheck:
-#       test: ["CMD-SHELL", "pg_isready -U postgres -d file_uploader"]
-#       interval: 10s  # Check every 10 seconds
-#       timeout: 5s    # Wait up to 5 seconds for a response
-#       retries: 5   
-#     networks:
-#       - backend
-
-#   migrate:
-#     image: migrate/migrate
-#     volumes:
-#       - ./migrations:/migrations
-#     depends_on:
-#       db:
-#         condition: service_healthy
-#     entrypoint: [
-#       "migrate", 
-#       "-path", "/migrations",
-#       "-database", "postgres://postgres:qweqwe33@db:5432/file_uploader?sslmode=disable",
-#       "up"
-#     ]
-#     networks:
-#       - backend
-
-# volumes:
-#   pgdata:
-# networks:
-#   backend:
-
 version: '3.9'
 
 services:
@@ -62,8 +8,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - DATABASE_URL=postgres://postgres:qweqwe33@db:5432/file_uploader?sslmode=disable
     networks:
       - backend
 

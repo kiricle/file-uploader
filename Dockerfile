@@ -12,6 +12,7 @@ RUN go build -o main ./cmd/
 FROM debian:bookworm-slim
 WORKDIR /app
 COPY --from=builder /app/main /app/main
+COPY .env .env
 
 EXPOSE 8080
 CMD ["/app/main"]

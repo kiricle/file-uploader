@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/kiricle/file-uploader/internal/config"
 	"github.com/kiricle/file-uploader/internal/handlers"
 	"github.com/kiricle/file-uploader/internal/router"
 	"github.com/kiricle/file-uploader/internal/service"
@@ -15,11 +15,10 @@ import (
 )
 
 func main() {
-	DB_URL := os.Getenv("DATABASE_URL")
-	JWT_SECRET := os.Getenv("JWT_SECRET")
+	appConfig := config.SetupConfig()
 
-	storage := postgres.NewStorage(DB_URL)
-	jwtService := service.NewJWTService(JWT_SECRET)
+	storage := postgres.NewStorage(appConfig.DB_URL)
+	jwtService := service.NewJWTService(appConfig.JWT_SECRET)
 	authService := service.NewAuthService(storage, jwtService)
 	validate := validator.New()
 	authHandler := handlers.NewAuthHandler(validate, authService)

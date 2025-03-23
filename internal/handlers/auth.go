@@ -51,12 +51,6 @@ func (ah *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("Error marshalling result: %v", err)))
-		return
-	}
-
 	w.Write([]byte("User registered successfully"))
 }
 
