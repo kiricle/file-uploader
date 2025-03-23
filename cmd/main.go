@@ -1,38 +1,31 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/kiricle/file-uploader/internal/handlers"
+	"github.com/kiricle/file-uploader/internal/router"
+	"github.com/kiricle/file-uploader/internal/service"
+	"github.com/kiricle/file-uploader/internal/storage/postgres"
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	DB_URL := os.Getenv("DATABASE_URL")
+	JWT_SECRET := os.Getenv("JWT_SECRET")
 
-	db, err := sql.Open("postgres", DB_URL)
-	if err != nil {
-		log.Fatalf("Ошибка подключения к БД: %v", err)
-	}
-	defer db.Close()
+	storage := postgres.NewStorage(DB_URL)
+	jwtService := service.NewJWTService(JWT_SECRET)
+	authService := service.NewAuthService(storage, jwtService)
+	validate := validator.New()
+	authHandler := handlers.NewAuthHandler(validate, authService)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, Dockerized Go App!")
-		fmt.Println("Request processed")
-	})
+	r := router.SetupRouter(authHandler)
 
-	http.HandleFunc("/db", func(w http.ResponseWriter, r *http.Request) {
-		err := db.Ping()
-		if err != nil {
-			http.Error(w, "DB Connection Failed", http.StatusInternalServerError)
-			return
-		}
-		fmt.Fprintf(w, "Connected to DB!")
-	})
-
-	fmt.Println("Сервер запущен на :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Println("Server is running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
