@@ -10,6 +10,9 @@ import (
 	"github.com/kiricle/file-uploader/internal/models"
 )
 
+//go:generate mockgen -source=auth.go -destination=../mocks/mock_auth.go 
+
+
 type AuthService interface {
 	SignUp(dto models.SignUpDTO) (int64, error)
 	SignIn(dto models.SignInDTO) (string, error)
@@ -51,6 +54,7 @@ func (ah *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("User registered successfully"))
 }
 
