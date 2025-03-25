@@ -78,13 +78,15 @@ func (ah *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := ah.authService.SignIn(dto)
+	token, err := ah.authService.SignIn(dto)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(fmt.Sprintf("Error signing in: %v", err)))
 		return
 	}
 
+
+	result := models.SignInResponse{Token: token}
 	resultJSON, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

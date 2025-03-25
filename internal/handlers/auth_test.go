@@ -50,7 +50,8 @@ func TestHandler_signUp(t *testing.T) {
 			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       "Key: 'SignUpDTO.Password' Error:Field validation for 'Password' failed on the 'min' tag",
 		},
-		{name: "Failure - AuthService Returns Error",
+		{
+			name:      "Failure - AuthService Returns Error",
 			inputBody: `{"email": "existed-email@gmail.com", "password": "someSecurePassword123"}`,
 			mockBehavior: func(s *mock_handlers.MockAuthService, signUpDto models.SignUpDTO) {
 				s.EXPECT().SignUp(signUpDto).Return(int64(0), errors.New("user already exists"))
@@ -76,7 +77,6 @@ func TestHandler_signUp(t *testing.T) {
 			tc.mockBehavior(authService, signUpDto)
 
 			validate := validator.New()
-
 			handler := handlers.NewAuthHandler(validate, authService)
 
 			r := chi.NewRouter()
@@ -85,6 +85,82 @@ func TestHandler_signUp(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/sign-up", bytes.NewBufferString(tc.inputBody))
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatusCode, w.Code)
+			assert.Equal(t, tc.expectedBody, w.Body.String())
+		})
+	}
+}
+
+func TestHandler_signIn(t *testing.T) {
+	type mockBehavior func(s *mock_handlers.MockAuthService, signInDto models.SignInDTO)
+
+	testCases := []struct {
+		name               string
+		inputBody          string
+		mockBehavior       mockBehavior
+		expectedStatusCode int
+		expectedBody       string
+	}{
+		{
+			name:      "Success - Valid Credentials",
+			inputBody: `{"email":"test@example.com","password":"securepassword"}`,
+			mockBehavior: func(s *mock_handlers.MockAuthService, signInDto models.SignInDTO) {
+				s.EXPECT().SignIn(signInDto).Return("mocked-jwt-token", nil)
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedBody:       `{"token":"mocked-jwt-token"}`,
+		},
+		{
+			name:               "Failure - Invalid Email Format",
+			inputBody:          `{"email": "invalid-email","password": "somepassword"}`,
+			mockBehavior:       func(s *mock_handlers.MockAuthService, signInDto models.SignInDTO) {},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "Key: 'SignInDTO.Email' Error:Field validation for 'Email' failed on the 'email' tag",
+		},
+		{
+			name:               "Failure - Missing Password",
+			inputBody:          `{"email": "test@example.com","password": ""}`,
+			mockBehavior:       func(s *mock_handlers.MockAuthService, signInDto models.SignInDTO) {},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "Key: 'SignInDTO.Password' Error:Field validation for 'Password' failed on the 'required' tag",
+		},
+		{
+			name:      "Failure - Wrong Password",
+			inputBody: `{"email": "test@example.com", "password": "wrongpassword"}`,
+			mockBehavior: func(s *mock_handlers.MockAuthService, signInDto models.SignInDTO) {
+				s.EXPECT().SignIn(signInDto).Return("", errors.New("invalid credentials"))
+			},
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedBody:       "Error signing in: invalid credentials",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := gomock.NewController(t)
+			defer c.Finish()
+
+			var signInDto models.SignInDTO
+			err := json.Unmarshal([]byte(tc.inputBody), &signInDto)
+			if err != nil {
+				t.Fatalf("Failed to unmarshal input body: %v", err)
+			}
+
+			authService := mock_handlers.NewMockAuthService(c)
+			tc.mockBehavior(authService, signInDto)
+
+			validate := validator.New()
+
+			handler := handlers.NewAuthHandler(validate, authService)
+
+			r := chi.NewRouter()
+			r.Post("/api/v1/sign-in", handler.SignIn)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/sign-in", bytes.NewBufferString(tc.inputBody))
 
 			r.ServeHTTP(w, req)
 
